@@ -35,6 +35,13 @@ const YEARS = [
 const ALIAS = { USA: 'United States' }
 const norm = (t) => ALIAS[t] ?? t
 
+// Nations that no longer exist as such. Kept in the data (and searchable), but
+// excluded from the default top-20 so the default view is present-day countries.
+const DEFUNCT = new Set([
+  'West Germany', 'East Germany', 'Soviet Union', 'Czechoslovakia',
+  'Yugoslavia', 'Serbia and Montenegro', 'Zaire', 'Dutch East Indies',
+])
+
 const SOURCE = {
   label: 'openfootball / worldcup.json — free open public-domain World Cup football data',
   publisher: 'openfootball (football.json project)',
@@ -43,7 +50,7 @@ const SOURCE = {
   accessed: new Date().toISOString().slice(0, 10),
 }
 
-const TOP_N = 12 // countries shown as lines by default
+const DEFAULT_TOP = 20 // still-existing countries selected as lines by default
 
 async function fetchEdition(year) {
   const res = await fetch(`${BASE}/${year}/worldcup.json`)
@@ -77,6 +84,7 @@ async function main() {
   // edition's last match date (the x-position all its team-points share).
   const rows = [] // { team, year, ts, date, opp, gf, ga, result, stage }
   const editionEndTs = new Map()
+  const champions = new Map() // year -> winning team (derived from the Final)
   let matchesUsed = 0, skipped = 0
 
   for (const { year, matches } of editions) {
@@ -93,7 +101,23 @@ async function main() {
       const res = (a, b) => (a > b ? 'W' : a < b ? 'L' : 'D')
       rows.push({ team: t1, year, ts, date: m.date, opp: t2, gf: g[0], ga: g[1], result: res(g[0], g[1]), stage })
       rows.push({ team: t2, year, ts, date: m.date, opp: t1, gf: g[1], ga: g[0], result: res(g[1], g[0]), stage })
+
+      // Champion = winner of the match whose round is exactly "Final". A drawn
+      // final is decided by the penalty shootout (score.p) — the ONLY place we
+      // read score.p, and never for goal totals.
+      if (/^final$/i.test((m.round || '').trim())) {
+        const [a, b] = g
+        const p = m.score.p
+        const w = a !== b ? (a > b ? 0 : 1) : p && p[0] !== p[1] ? (p[0] > p[1] ? 0 : 1) : null
+        if (w !== null) champions.set(year, w === 0 ? t1 : t2)
+      }
     }
+  }
+
+  // 1950 had a final round-robin, not a single "Final" match; record its winner.
+  const FALLBACK_CHAMPION = { 1950: 'Uruguay' }
+  for (const [y, champ] of Object.entries(FALLBACK_CHAMPION)) {
+    if (!champions.has(+y)) champions.set(+y, champ)
   }
 
   // Group rows by team, then by edition. One point per (team, edition):
@@ -119,14 +143,21 @@ async function main() {
         ts: editionEndTs.get(year),
         cum,
         goals,
+        champion: champions.get(year) === team,
         games: games.map((g) => ({ opp: g.opp, gf: g.gf, ga: g.ga, result: g.result, stage: g.stage })),
       })
     }
-    teams.push({ team, total: cum, editions: points.length, matches: rows.filter((r) => r.team === team).length, points })
+    teams.push({
+      team, total: cum, editions: points.length,
+      matches: rows.filter((r) => r.team === team).length,
+      defunct: DEFUNCT.has(team), points,
+    })
   }
 
   teams.sort((a, b) => b.total - a.total)
-  const shown = teams.slice(0, TOP_N)
+  // Default view: the top-N still-existing countries. Defunct nations stay in
+  // the data (searchable) but don't fill the default slots.
+  const defaultSelection = teams.filter((t) => !t.defunct).slice(0, DEFAULT_TOP).map((t) => t.team)
 
   const payload = {
     generatedAt: new Date().toISOString(),
@@ -137,10 +168,11 @@ async function main() {
       matchesUsed,
       matchesSkipped: skipped,
       teamsTotal: teams.length,
-      teamsShown: shown.length,
+      defaultTop: DEFAULT_TOP,
+      defaultSelection,
       goalRule: 'in-play + extra-time goals per team; penalty-shootout goals excluded',
     },
-    teams: shown,
+    teams, // all teams, sorted by total desc
   }
 
   await writeFile(resolve(OUT_DIR, 'worldcup.json'), JSON.stringify(payload))
@@ -149,11 +181,14 @@ async function main() {
   const arg = teams.find((t) => t.team === 'Argentina')
   const final2022 = arg?.points.find((p) => p.year === 2022)?.games.find((g) => g.opp === 'France')
   console.log(`Editions: ${editions.length}  matches used: ${matchesUsed}  skipped: ${skipped}`)
-  console.log(`Teams total: ${teams.length}  shown: ${shown.length}  (one point per edition per team)`)
+  console.log(`Teams total: ${teams.length}  default selection: top ${defaultSelection.length} still-existing`)
   console.log('Top scorers (cumulative goals, all World Cups):')
-  for (const t of shown) console.log(`  ${String(t.total).padStart(3)}  ${t.team}  (${t.editions} cups, ${t.matches} matches)`)
+  for (const t of teams.slice(0, 15)) {
+    console.log(`  ${String(t.total).padStart(3)}  ${t.team}${t.defunct ? '  [former]' : ''}  (${t.editions} cups)`)
+  }
   if (final2022) console.log(`Self-check 2022 vs France: Argentina scored ${final2022.gf} (not the shootout) ✓`)
   else console.log('Self-check: could not locate 2022 Argentina–France row.')
+  console.log(`Champions derived: ${champions.size}/22  spot-checks → 2022:${champions.get(2022)}  1966:${champions.get(1966)}  1950:${champions.get(1950)}`)
 }
 
 main().catch((err) => { console.error(err); process.exit(1) })

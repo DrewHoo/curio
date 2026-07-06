@@ -11,6 +11,7 @@ export interface EditionPoint {
   ts: number // UTC timestamp used for the x-position (edition's last match)
   cum: number // cumulative goals for this team through this edition
   goals: number // goals this team scored in this tournament
+  champion: boolean // this team won the World Cup that year
   games: Game[] // this team's matches that tournament, in order of appearance
 }
 
@@ -19,6 +20,7 @@ export interface TeamSeries {
   total: number
   editions: number
   matches: number
+  defunct: boolean // nation no longer exists (e.g. West Germany, Soviet Union)
   points: EditionPoint[]
 }
 
@@ -39,7 +41,8 @@ export interface Dataset {
     matchesUsed: number
     matchesSkipped: number
     teamsTotal: number
-    teamsShown: number
+    defaultTop: number
+    defaultSelection: string[]
     goalRule: string
   }
   teams: TeamSeries[]

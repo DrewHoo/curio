@@ -1,7 +1,24 @@
 import { useRef, useState } from 'react'
+import type { CSSProperties, MouseEvent as ReactMouseEvent, SVGProps } from 'react'
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid } from 'recharts'
 import type { TeamSeries, EditionPoint } from '../lib/types.ts'
-import { colorFor } from '../lib/colors.ts'
+
+// A small trophy glyph in the team's colour, drawn where a team won the cup.
+function Trophy({ cx, cy, color, size, handlers }: {
+  cx: number; cy: number; color: string; size: number; handlers: SVGProps<SVGGElement>
+}) {
+  const s = size / 24
+  return (
+    <g transform={`translate(${cx - size / 2}, ${cy - size / 2}) scale(${s})`} {...handlers}>
+      <rect x={-6} y={-6} width={36} height={36} fill="transparent" />
+      <path d="M6 3 H18 V7 A6 6 0 0 1 6 7 Z" fill={color} stroke="var(--card)" strokeWidth={1.1} strokeLinejoin="round" />
+      <path d="M6 4.2 A3.4 3.4 0 0 0 6 9" fill="none" stroke={color} strokeWidth={1.5} />
+      <path d="M18 4.2 A3.4 3.4 0 0 1 18 9" fill="none" stroke={color} strokeWidth={1.5} />
+      <rect x={11} y={11.5} width={2} height={3.2} fill={color} />
+      <rect x={8} y={14.6} width={8} height={2} rx={0.6} fill={color} stroke="var(--card)" strokeWidth={0.6} />
+    </g>
+  )
+}
 
 const yearOf = (ts: number) => String(new Date(ts).getUTCFullYear())
 const DOMAIN: [number, number] = [Date.UTC(1930, 0, 1), Date.UTC(2023, 0, 1)]
@@ -12,8 +29,9 @@ const stageLabel = (s: string) => (/^matchday/i.test(s) ? 'Group stage' : s)
 
 interface Hover { team: string; color: string; point: EditionPoint; cx: number; cy: number }
 
-export function GoalRaceChart({ teams, highlight, onHighlight, height }: {
+export function GoalRaceChart({ teams, colorOf, highlight, onHighlight, height }: {
   teams: TeamSeries[]
+  colorOf: (team: string) => string
   highlight: string | null
   onHighlight: (team: string) => void
   height: number
@@ -38,16 +56,21 @@ export function GoalRaceChart({ teams, highlight, onHighlight, height }: {
       const { cx, cy, payload } = props
       if (cx == null || cy == null || !payload) return <g />
       const active = hover?.team === team && hover?.point.year === payload.year
+      const handlers = {
+        style: { cursor: 'pointer', pointerEvents: dim ? 'none' : 'auto', opacity: dim ? 0.12 : 1 } as CSSProperties,
+        onMouseEnter: () => { if (!sticky) show({ team, color, point: payload, cx, cy }, false) },
+        onMouseLeave: () => { if (!sticky) setHover(null) },
+        onClick: (e: ReactMouseEvent) => { e.stopPropagation(); show({ team, color, point: payload, cx, cy }, true) },
+      }
+      if (payload.champion) {
+        return <Trophy key={`${team}-${payload.year}`} cx={cx} cy={cy} color={color} size={active ? 21 : 16} handlers={handlers} />
+      }
       return (
         <circle
           key={`${team}-${payload.year}`}
           cx={cx} cy={cy} r={active ? 5.5 : 3.5}
           fill={color} stroke="var(--card)" strokeWidth={1.25}
-          opacity={dim ? 0.12 : 1}
-          style={{ cursor: 'pointer', pointerEvents: dim ? 'none' : 'auto' }}
-          onMouseEnter={() => { if (!sticky) show({ team, color, point: payload, cx, cy }, false) }}
-          onMouseLeave={() => { if (!sticky) setHover(null) }}
-          onClick={(e) => { e.stopPropagation(); show({ team, color, point: payload, cx, cy }, true) }}
+          {...handlers}
         />
       )
     }
@@ -73,10 +96,10 @@ export function GoalRaceChart({ teams, highlight, onHighlight, height }: {
             tick={{ fontSize: 12, fill: 'var(--muted)' }} stroke="var(--line)"
             width={40} allowDecimals={false}
           />
-          {teams.map((t, i) => {
+          {teams.map((t) => {
             const on = highlight === t.team
             const dim = highlight !== null && !on
-            const color = colorFor(i)
+            const color = colorOf(t.team)
             return (
               <Line
                 key={t.team} data={t.points} dataKey="cum" name={t.team}
@@ -109,10 +132,15 @@ export function GoalRaceChart({ teams, highlight, onHighlight, height }: {
               {hover.point.cum} total
             </span>
           </div>
-          <div style={{ fontSize: 12.5, color: 'var(--muted)', margin: '3px 0 8px' }}>
+          <div style={{ fontSize: 12.5, color: 'var(--muted)', margin: '3px 0 6px' }}>
             World Cup {hover.point.year} · scored <b style={{ color: 'var(--ink)' }}>{hover.point.goals}</b>
             {' '}in {hover.point.games.length} {hover.point.games.length === 1 ? 'match' : 'matches'}
           </div>
+          {hover.point.champion && (
+            <div style={{ fontSize: 12, fontWeight: 700, color: '#a9791b', margin: '0 0 8px' }}>
+              🏆 Champions
+            </div>
+          )}
           <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gap: 3 }}>
             {hover.point.games.map((g, gi) => (
               <li key={gi} className="tabular" style={{ display: 'flex', alignItems: 'baseline', gap: 6, fontSize: 12.5 }}>
