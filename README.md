@@ -6,6 +6,17 @@ A *curio* is a rare, intriguing object you show people. This is a template repo 
 
 It's built for **everyone**: whether or not you write code, you use it the same way — the difference is only how many opinions you bring.
 
+## This repo is a working example
+
+Out of the box this repo **is** a live Curio — *The World Cup Goal Race*: which countries have scored the most World Cup goals (1930–2022), as a cumulative race where each line is a country and every point is a real match you can hover. It's built on open, cited data ([openfootball](https://github.com/openfootball/worldcup.json), CC0), fetched fresh at build time.
+
+```sh
+npm install
+npm run dev      # open the World Cup Goal Race locally
+```
+
+When you fork it, that example is your starting point: keep the machinery (data fetch → chart → citations → URL state → mobile → deploy) and swap in *your* question and data.
+
 ## What you get
 
 - **Question-first, not chart-first.** Start from what you want to understand; the data and the controls emerge from the exploration.
