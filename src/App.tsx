@@ -71,7 +71,7 @@ export function App() {
       </h1>
       <p style={{ fontSize: narrow ? 16 : 18, color: 'var(--muted)', margin: '0 0 6px', maxWidth: 640 }}>
         Every goal every nation has scored across World Cup history, 1930–2022, as a cumulative race.
-        Each line is a country; each point is a real match. Hover a point for the game.
+        Each line is a country; each point is one World Cup — hover it for every game they played that tournament.
       </p>
       {leader && (
         <p className="tabular" style={{ fontSize: 15, color: 'var(--ink)', margin: '0 0 22px' }}>
@@ -139,8 +139,9 @@ export function App() {
 
       <div style={{ marginTop: 20, fontSize: 14.5, color: 'var(--muted)', maxWidth: 660, display: 'grid', gap: 8 }}>
         <p style={{ margin: 0 }}>
-          <b style={{ color: 'var(--ink)' }}>Reading it:</b> lines climb in bursts every four years — the tournaments —
-          and sit flat in between. Tap a country to isolate its run; tap a point (or hover) to see that match.
+          <b style={{ color: 'var(--ink)' }}>Reading it:</b> each point is one World Cup for that country, placed at its
+          running goal total. Hover a point (or tap, on a phone) to see every game they played that tournament, in order.
+          Tap a country in the legend to isolate its run.
         </p>
         {hasBothGermanys && (
           <p style={{ margin: 0 }}>

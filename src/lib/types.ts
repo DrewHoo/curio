@@ -1,22 +1,25 @@
-export interface GamePoint {
-  ts: number // UTC timestamp of the match date
-  date: string // 'YYYY-MM-DD'
-  cum: number // cumulative goals for this team through this match
-  goals: number // goals this team scored in this match (in-play + ET, no shootout)
+export interface Game {
   opp: string
-  gf: number
-  ga: number
+  gf: number // goals this team scored (in-play + ET, no shootout)
+  ga: number // goals conceded
   result: 'W' | 'L' | 'D'
   stage: string
-  year: number
-  scorers?: string[]
+}
+
+export interface EditionPoint {
+  year: number // World Cup edition
+  ts: number // UTC timestamp used for the x-position (edition's last match)
+  cum: number // cumulative goals for this team through this edition
+  goals: number // goals this team scored in this tournament
+  games: Game[] // this team's matches that tournament, in order of appearance
 }
 
 export interface TeamSeries {
   team: string
   total: number
+  editions: number
   matches: number
-  points: GamePoint[]
+  points: EditionPoint[]
 }
 
 export interface Source {
