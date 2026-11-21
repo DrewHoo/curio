@@ -2,7 +2,7 @@
 // Run locally when the design changes; outputs are committed and served static
 // (CI does not regenerate them). Needs `sharp`, which is intentionally NOT a
 // project dependency (keeps installs + CI lean). Run with a throwaway install:
-//   npm i -D sharp && node scripts/gen-assets.mjs && npm uninstall sharp
+//   pnpm add -D sharp && node scripts/gen-assets.mjs && pnpm remove sharp
 import sharp from 'sharp'
 import { writeFile } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'

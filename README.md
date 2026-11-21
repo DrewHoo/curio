@@ -11,8 +11,8 @@ It's built for **everyone**: whether or not you write code, you use it the same 
 Out of the box this repo **is** a live Curio — *The World Cup Goal Race*: which countries have scored the most World Cup goals (1930–2022), as a cumulative race where each line is a country and every point is a real match you can hover. It's built on open, cited data ([openfootball](https://github.com/openfootball/worldcup.json), CC0), fetched fresh at build time.
 
 ```sh
-npm install
-npm run dev      # open the World Cup Goal Race locally
+pnpm install
+pnpm run dev      # open the World Cup Goal Race locally
 ```
 
 When you fork it, that example is your starting point: keep the machinery (data fetch → chart → citations → URL state → mobile → deploy) and swap in *your* question and data.
@@ -36,7 +36,7 @@ It reads [`SKILL.md`](SKILL.md), finds and fetches the data, builds the page, an
 
 ### By hand
 1. Click **"Use this template"** and name your repo (the name becomes the URL).
-2. `npm install && npm run dev`.
+2. `pnpm install && pnpm run dev`.
 3. Put your data-fetching logic in `scripts/`, your config/content where the skill directs, and iterate.
 4. `git push` — the included GitHub Action builds and deploys to your Pages URL.
 

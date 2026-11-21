@@ -20,8 +20,8 @@ Public is required for free GitHub Pages on personal accounts.
 Already present in the template. From scratch it's:
 
 ```bash
-npm create vite@latest . -- --template react
-npm install
+pnpm create vite@latest . -- --template react
+pnpm install
 ```
 
 JS or TS both fine. Any static-output stack works (Astro, plain HTML, Observable Framework) as long as you end with a static `dist/`.
@@ -66,11 +66,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
-        with: { node-version: 20, cache: 'npm' }
-      - run: npm ci
-      # If a build script fetches data (scripts/fetch-*), it runs inside `npm run build`.
-      - run: npm run build
+        with: { node-version: 20, cache: 'pnpm' }
+      - run: pnpm install --frozen-lockfile
+      # If a build script fetches data (scripts/fetch-*), it runs inside `pnpm run build`.
+      - run: pnpm run build
       - uses: actions/upload-pages-artifact@v3
         with: { path: ./dist }
   deploy:
@@ -82,13 +83,7 @@ jobs:
         uses: actions/deploy-pages@v4
 ```
 
-**CI gotcha — native binaries on Linux.** If the project pulls in `lightningcss` (Tailwind v4), `sharp`, `@rollup/rollup-*`, or `@swc/core`, a macOS-generated lockfile can skip the Linux variant and the build dies with `Cannot find module '…linux-x64-gnu.node'`. Fix by installing the Linux binary between `npm ci` and `npm run build`:
-
-```yaml
-      - run: npm ci
-      - run: npm install --no-save lightningcss-linux-x64-gnu   # or the one that's missing
-      - run: npm run build
-```
+**CI and native binaries.** `pnpm-lock.yaml` records every platform's variant of `lightningcss` (Tailwind v4), `sharp`, `@rollup/rollup-*` and `@swc/core`, so a lockfile written on macOS installs on the Linux runner with no extra step.
 
 ## 5. Enable Pages (source = Actions)
 
